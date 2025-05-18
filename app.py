@@ -11812,65 +11812,91 @@ with gr.Blocks(title="WheelPulse by S.T.Y.W 📈") as demo:
     """)
     
     # Event Handlers
-    try:
-        spins_textbox.change(
-            fn=validate_spins_input,
-            inputs=[spins_textbox],
-            outputs=[spins_display, last_spin_display]
-        ).then(
-            fn=lambda spins_display, count, show_trends: format_spins_as_html(spins_display, count, show_trends),
-            inputs=[spins_display, last_spin_count, show_trends_state],
-            outputs=[last_spin_display]
-        ).then(
-            fn=analyze_spins,
-            inputs=[spins_display, strategy_dropdown, neighbours_count_slider, strong_numbers_count_slider],
-            outputs=[
-                spin_analysis_output, even_money_output, dozens_output, columns_output,
-                streets_output, corners_output, six_lines_output, splits_output,
-                sides_output, straight_up_html, top_18_html, strongest_numbers_output,
-                dynamic_table_output, strategy_output, sides_of_zero_display
-            ]
-        ).then(
-            fn=update_spin_counter,
-            inputs=[],
-            outputs=[spin_counter]
-        ).then(
-            fn=dozen_tracker,
-            inputs=[dozen_tracker_spins_dropdown, dozen_tracker_consecutive_hits_dropdown, dozen_tracker_alert_checkbox, dozen_tracker_sequence_length_dropdown, dozen_tracker_follow_up_spins_dropdown, dozen_tracker_sequence_alert_checkbox],
-            outputs=[gr.State(), dozen_tracker_output, dozen_tracker_sequence_output]
-        ).then(
-            fn=even_money_tracker,
-            inputs=[
-                even_money_tracker_spins_dropdown,
-                even_money_tracker_consecutive_hits_dropdown,
-                even_money_tracker_alert_checkbox,
-                even_money_tracker_combination_mode_dropdown,
-                even_money_tracker_red_checkbox,
-                even_money_tracker_black_checkbox,
-                even_money_tracker_even_checkbox,
-                even_money_tracker_odd_checkbox,
-                even_money_tracker_low_checkbox,
-                even_money_tracker_high_checkbox,
-                even_money_tracker_identical_traits_checkbox,
-                even_money_tracker_consecutive_identical_dropdown
-            ],
-            outputs=[gr.State(), even_money_tracker_output]
-        ).then(
-            fn=summarize_spin_traits,  # Use summarize_spin_traits directly for now
-            inputs=[last_spin_count],
-            outputs=[traits_display]
-        ).then(
-            fn=select_next_spin_top_pick,
-            inputs=[top_pick_spin_count],
-            outputs=[top_pick_display]
-        ).then(
-            fn=lambda: print(f"After spins_textbox change: state.last_spins = {state.last_spins}"),
-            inputs=[],
-            outputs=[]
-        )
-    except Exception as e:
-        print(f"Error in spins_textbox.change handler: {str(e)}")
-        gr.Warning(f"Error during spin analysis: {str(e)}")
+with gr.Row():
+    with gr.Column(scale=1):
+        spins_textbox = gr.Textbox(label="Enter Spins (e.g., 5, 12, 0)", placeholder="Type numbers separated by commas", elem_classes=["spins-textbox"])
+        spins_display = gr.Textbox(label="Selected Spins", interactive=False, elem_id="selected-spins")
+        spin_counter = gr.HTML("<span class='spin-counter'>Total Spins: 0</span>")
+        last_spin_count = gr.Slider(minimum=1, maximum=36, value=36, step=1, label="Last Spins to Show", elem_classes=["last-spin-count"])
+        show_trends = gr.Checkbox(label="Show Trends", value=True, elem_classes=["show-trends"])
+        last_spin_display = gr.HTML("<h4>Last Spins</h4><p>No spins yet.</p>", elem_classes=["last-spin-display"])
+        clear_spins_button = gr.Button("Clear Spins", elem_classes=["clear-spins-btn", "red-btn"])
+        clear_all_button = gr.Button("Clear All", elem_classes=["clear-all-btn", "red-btn"])
+        undo_button = gr.Button("Undo Last Spin", elem_classes=["undo-btn", "orange-btn"])
+        undo_count = gr.Slider(minimum=1, maximum=10, value=1, step=1, label="Number of Spins to Undo", elem_classes=["undo-count"])
+        generate_spins_button = gr.Button("Generate Random Spins", elem_classes=["generate-spins-btn", "green-btn"])
+        num_spins = gr.Slider(minimum=1, maximum=100, value=10, step=1, label="Number of Random Spins", elem_classes=["num-spins"])
+        spin_analysis_output = gr.Textbox(label="Spin Analysis", interactive=False, elem_classes=["spin-analysis-output"])
+
+        # Line 1: Start of spins_textbox.change handler
+        try:
+            spins_textbox.change(
+                fn=validate_spins_input,
+                inputs=[spins_textbox],
+                outputs=[spins_display, last_spin_display]
+            ).then(
+                fn=orchestrate_analysis,
+                inputs=[
+                    spins_display,
+                    strategy_dropdown,
+                    neighbours_count_slider,
+                    strong_numbers_count_slider,
+                    dozen_tracker_spins_dropdown,
+                    dozen_tracker_consecutive_hits_dropdown,
+                    dozen_tracker_alert_checkbox,
+                    dozen_tracker_sequence_length_dropdown,
+                    dozen_tracker_follow_up_spins_dropdown,
+                    dozen_tracker_sequence_alert_checkbox,
+                    even_money_tracker_spins_dropdown,
+                    even_money_tracker_consecutive_hits_dropdown,
+                    even_money_tracker_alert_checkbox,
+                    even_money_tracker_combination_mode_dropdown,
+                    even_money_tracker_red_checkbox,
+                    even_money_tracker_black_checkbox,
+                    even_money_tracker_even_checkbox,
+                    even_money_tracker_odd_checkbox,
+                    even_money_tracker_low_checkbox,
+                    even_money_tracker_high_checkbox,
+                    even_money_tracker_identical_traits_checkbox,
+                    even_money_tracker_consecutive_identical_dropdown,
+                    top_color_picker,
+                    middle_color_picker,
+                    lower_color_picker
+                ],
+                outputs=[
+                    spin_analysis_output,
+                    even_money_output,
+                    dozens_output,
+                    columns_output,
+                    streets_output,
+                    corners_output,
+                    six_lines_output,
+                    splits_output,
+                    sides_output,
+                    straight_up_html,
+                    top_18_html,
+                    strongest_numbers_output,
+                    dynamic_table_output,
+                    strategy_output,
+                    sides_of_zero_display,
+                    gr.State(),
+                    dozen_tracker_output,
+                    dozen_tracker_sequence_output,
+                    gr.State(),
+                    even_money_tracker_output,
+                    color_code_output,
+                    analysis_cache,
+                    traits_display,
+                    top_pick_display
+                ]
+            ).then(
+                fn=update_spin_counter,
+                inputs=None,
+                outputs=[spin_counter]
+            )
+        except Exception as e:
+            print(f"Error in spins_textbox.change handler: {str(e)}")
+            gr.Warning(f"Error during spin analysis: {str(e)}")
     
     try:
         spins_display.change(
@@ -12086,37 +12112,88 @@ with gr.Blocks(title="WheelPulse by S.T.Y.W 📈") as demo:
         )
 
     # New: Orchestrating function to combine analysis steps
-    def orchestrate_analysis(spins_display, strategy, neighbours_count, strong_numbers_count, dozen_tracker_spins, dozen_consecutive_hits, dozen_alert, dozen_sequence_length, dozen_follow_up_spins, dozen_sequence_alert, even_money_spins, even_money_consecutive_hits, even_money_alert, even_money_combination_mode, red, black, even, odd, low, high, identical_traits, consecutive_identical, top_color, middle_color, lower_color):
-        """Orchestrate analysis, producing all outputs in one pass with scores always reset."""
-        import time
-        start_time = time.time()
+def orchestrate_analysis(
+    spins_display,
+    strategy_name,
+    neighbours_count,
+    strong_numbers_count,
+    dozen_tracker_spins,
+    dozen_tracker_hits,
+    dozen_tracker_alert,
+    dozen_tracker_seq_length,
+    dozen_tracker_follow_up,
+    dozen_tracker_seq_alert,
+    even_money_spins,
+    even_money_hits,
+    even_money_alert,
+    even_money_mode,
+    track_red,
+    track_black,
+    track_even,
+    track_odd,
+    track_low,
+    track_high,
+    identical_traits,
+    identical_count,
+    top_color,
+    middle_color,
+    lower_color
+):
+    """Orchestrate all analysis tasks for spin input changes."""
+    try:
+        print(f"orchestrate_analysis: Starting with spins_display='{spins_display}', strategy_name='{strategy_name}'")
         
-        # Run analysis (scores are always reset in analyze_spins)
-        spins_analysis, even_money, dozens, columns, streets, corners, six_lines, splits, sides, straight_up, top_18, strongest_numbers = analyze_spins(spins_display, strategy, neighbours_count, strong_numbers_count)
+        # Step 1: Analyze spins
+        analysis_outputs = analyze_spins(
+            spins_display, strategy_name, neighbours_count, strong_numbers_count
+        )
+        (
+            spin_analysis, even_money, dozens, columns, streets, corners,
+            six_lines, splits, sides, straight_up, top_18, strongest_numbers,
+            dynamic_table, strategy_output, sides_of_zero
+        ) = analysis_outputs
         
-        # Run trackers and dynamic table
-        dozen_text, dozen_html, dozen_sequence_html = dozen_tracker(
-            dozen_tracker_spins, dozen_consecutive_hits, dozen_alert,
-            dozen_sequence_length, dozen_follow_up_spins, dozen_sequence_alert
+        # Step 2: Dozen tracker
+        dozen_state, dozen_output, dozen_seq_output = dozen_tracker(
+            dozen_tracker_spins, dozen_tracker_hits, dozen_tracker_alert,
+            dozen_tracker_seq_length, dozen_tracker_follow_up, dozen_tracker_seq_alert
         )
-        even_money_text, even_money_html = even_money_tracker(
-            even_money_spins, even_money_consecutive_hits, even_money_alert,
-            even_money_combination_mode, red, black, even, odd, low, high,
-            identical_traits, consecutive_identical
-        )
-        dynamic_table = create_dynamic_table(
-            strategy if strategy != "None" else None, neighbours_count,
-            strong_numbers_count, dozen_tracker_spins, top_color, middle_color, lower_color
-        )
-        color_code = create_color_code_table()
         
-        print(f"Analysis completed in {time.time() - start_time:.3f} seconds")
+        # Step 3: Even money tracker
+        even_money_state, even_money_output = even_money_tracker(
+            even_money_spins, even_money_hits, even_money_alert, even_money_mode,
+            track_red, track_black, track_even, track_odd, track_low, track_high,
+            identical_traits, identical_count
+        )
+        
+        # Step 4: Summarize spin traits
+        traits_output = summarize_spin_traits(36)  # Default to max spins
+        
+        # Step 5: Next spin top pick
+        top_pick_output = select_next_spin_top_pick(18)  # Default spin count
+        
+        # Step 6: Update color code table
+        color_code_output = create_color_code_table()
+        
+        # Step 7: Update analysis cache
+        cache_output = cache_analysis(spins_display, 36)
+        
+        print(f"orchestrate_analysis: Completed, returning outputs")
         return (
-            spins_analysis, even_money, dozens, columns, streets, corners, six_lines,
-            splits, sides, straight_up, top_18, strongest_numbers, dynamic_table,
-            show_strategy_recommendations(strategy, neighbours_count, strong_numbers_count),
-            render_sides_of_zero_display(), dozen_text, dozen_html, dozen_sequence_html,
-            even_money_text, even_money_html, color_code, analysis_cache.value
+            spin_analysis, even_money, dozens, columns, streets, corners,
+            six_lines, splits, sides, straight_up, top_18, strongest_numbers,
+            dynamic_table, strategy_output, sides_of_zero, dozen_state,
+            dozen_output, dozen_seq_output, even_money_state, even_money_output,
+            color_code_output, cache_output, traits_output, top_pick_output
+        )
+    except Exception as e:
+        print(f"orchestrate_analysis: Error: {str(e)}")
+        gr.Warning(f"Analysis failed: {str(e)}")
+        return (
+            f"Error: {str(e)}", "", "", "", "", "", "", "", "", "", "", "",
+            "", "", render_sides_of_zero_display(), gr.State(), "", "", gr.State(),
+            "", create_color_code_table(), {}, "<p>Error analyzing traits.</p>",
+            "<p>Error selecting top pick.</p>"
         )
     
     try:
@@ -13129,62 +13206,6 @@ with gr.Blocks(title="WheelPulse by S.T.Y.W 📈") as demo:
         )
     except Exception as e:
         print(f"Error in clear_cold_button.click handler: {str(e)}")
-
-    try:
-        spins_textbox.change(
-            fn=validate_spins_input,
-            inputs=[spins_textbox],
-            outputs=[spins_display, last_spin_display]
-        ).then(
-            fn=lambda spins_display, count, show_trends: format_spins_as_html(spins_display, count, show_trends),
-            inputs=[spins_display, last_spin_count, show_trends_state],
-            outputs=[last_spin_display]
-        ).then(
-            fn=analyze_spins,
-            inputs=[spins_display, strategy_dropdown, neighbours_count_slider, strong_numbers_count_slider],
-            outputs=[
-                spin_analysis_output, even_money_output, dozens_output, columns_output,
-                streets_output, corners_output, six_lines_output, splits_output,
-                sides_output, straight_up_html, top_18_html, strongest_numbers_output,
-                dynamic_table_output, strategy_output, sides_of_zero_display
-            ]
-        ).then(
-            fn=update_spin_counter,
-            inputs=[],
-            outputs=[spin_counter]
-        ).then(
-            fn=dozen_tracker,
-            inputs=[dozen_tracker_spins_dropdown, dozen_tracker_consecutive_hits_dropdown, dozen_tracker_alert_checkbox, dozen_tracker_sequence_length_dropdown, dozen_tracker_follow_up_spins_dropdown, dozen_tracker_sequence_alert_checkbox],
-            outputs=[gr.State(), dozen_tracker_output, dozen_tracker_sequence_output]
-        ).then(
-            fn=even_money_tracker,
-            inputs=[
-                even_money_tracker_spins_dropdown,
-                even_money_tracker_consecutive_hits_dropdown,
-                even_money_tracker_alert_checkbox,
-                even_money_tracker_combination_mode_dropdown,
-                even_money_tracker_red_checkbox,
-                even_money_tracker_black_checkbox,
-                even_money_tracker_even_checkbox,
-                even_money_tracker_odd_checkbox,
-                even_money_tracker_low_checkbox,
-                even_money_tracker_high_checkbox,
-                even_money_tracker_identical_traits_checkbox,
-                even_money_tracker_consecutive_identical_dropdown
-            ],
-            outputs=[gr.State(), even_money_tracker_output]
-        ).then(
-            fn=select_next_spin_top_pick,
-            inputs=[top_pick_spin_count],
-            outputs=[top_pick_display]
-        ).then(
-            fn=lambda: print(f"After spins_textbox change: state.last_spins = {state.last_spins}"),
-            inputs=[],
-            outputs=[]
-        )
-    except Exception as e:
-        print(f"Error in spins_textbox.change handler: {str(e)}")
-    
 
     def toggle_labouchere(progression):
         """Show/hide Labouchere sequence input based on selected progression."""
