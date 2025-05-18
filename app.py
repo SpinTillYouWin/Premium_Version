@@ -1,3 +1,13 @@
+
+
+import numpy as np
+from datetime import datetime
+import re
+import colorsys
+from typing import List, Dict, Any, Tuple
+import logging
+import os
+import sys
 import gradio as gr
 import math
 import pandas as pd
@@ -9827,7 +9837,6 @@ with gr.Blocks(title="WheelPulse by S.T.Y.W 📈") as demo:
     
     # CSS (end of the previous section, for context)
     gr.HTML("""
-
     <link rel="stylesheet" href="https://unpkg.com/shepherd.js@10.0.1/dist/css/shepherd.css">
     <script src="https://unpkg.com/shepherd.js@10.0.1/dist/js/shepherd.min.js" onerror="loadShepherdFallback()"></script>
     <script>
@@ -11812,91 +11821,95 @@ with gr.Blocks(title="WheelPulse by S.T.Y.W 📈") as demo:
     """)
     
     # Event Handlers
-with gr.Row():
-    with gr.Column(scale=1):
-        spins_textbox = gr.Textbox(label="Enter Spins (e.g., 5, 12, 0)", placeholder="Type numbers separated by commas", elem_classes=["spins-textbox"])
-        spins_display = gr.Textbox(label="Selected Spins", interactive=False, elem_id="selected-spins")
-        spin_counter = gr.HTML("<span class='spin-counter'>Total Spins: 0</span>")
-        last_spin_count = gr.Slider(minimum=1, maximum=36, value=36, step=1, label="Last Spins to Show", elem_classes=["last-spin-count"])
-        show_trends = gr.Checkbox(label="Show Trends", value=True, elem_classes=["show-trends"])
-        last_spin_display = gr.HTML("<h4>Last Spins</h4><p>No spins yet.</p>", elem_classes=["last-spin-display"])
-        clear_spins_button = gr.Button("Clear Spins", elem_classes=["clear-spins-btn", "red-btn"])
-        clear_all_button = gr.Button("Clear All", elem_classes=["clear-all-btn", "red-btn"])
-        undo_button = gr.Button("Undo Last Spin", elem_classes=["undo-btn", "orange-btn"])
-        undo_count = gr.Slider(minimum=1, maximum=10, value=1, step=1, label="Number of Spins to Undo", elem_classes=["undo-count"])
-        generate_spins_button = gr.Button("Generate Random Spins", elem_classes=["generate-spins-btn", "green-btn"])
-        num_spins = gr.Slider(minimum=1, maximum=100, value=10, step=1, label="Number of Random Spins", elem_classes=["num-spins"])
-        spin_analysis_output = gr.Textbox(label="Spin Analysis", interactive=False, elem_classes=["spin-analysis-output"])
-
-        # Line 1: Start of spins_textbox.change handler
-        try:
-            spins_textbox.change(
-                fn=validate_spins_input,
-                inputs=[spins_textbox],
-                outputs=[spins_display, last_spin_display]
-            ).then(
-                fn=orchestrate_analysis,
-                inputs=[
-                    spins_display,
-                    strategy_dropdown,
-                    neighbours_count_slider,
-                    strong_numbers_count_slider,
-                    dozen_tracker_spins_dropdown,
-                    dozen_tracker_consecutive_hits_dropdown,
-                    dozen_tracker_alert_checkbox,
-                    dozen_tracker_sequence_length_dropdown,
-                    dozen_tracker_follow_up_spins_dropdown,
-                    dozen_tracker_sequence_alert_checkbox,
-                    even_money_tracker_spins_dropdown,
-                    even_money_tracker_consecutive_hits_dropdown,
-                    even_money_tracker_alert_checkbox,
-                    even_money_tracker_combination_mode_dropdown,
-                    even_money_tracker_red_checkbox,
-                    even_money_tracker_black_checkbox,
-                    even_money_tracker_even_checkbox,
-                    even_money_tracker_odd_checkbox,
-                    even_money_tracker_low_checkbox,
-                    even_money_tracker_high_checkbox,
-                    even_money_tracker_identical_traits_checkbox,
-                    even_money_tracker_consecutive_identical_dropdown,
-                    top_color_picker,
-                    middle_color_picker,
-                    lower_color_picker
-                ],
-                outputs=[
-                    spin_analysis_output,
-                    even_money_output,
-                    dozens_output,
-                    columns_output,
-                    streets_output,
-                    corners_output,
-                    six_lines_output,
-                    splits_output,
-                    sides_output,
-                    straight_up_html,
-                    top_18_html,
-                    strongest_numbers_output,
-                    dynamic_table_output,
-                    strategy_output,
-                    sides_of_zero_display,
-                    gr.State(),
-                    dozen_tracker_output,
-                    dozen_tracker_sequence_output,
-                    gr.State(),
-                    even_money_tracker_output,
-                    color_code_output,
-                    analysis_cache,
-                    traits_display,
-                    top_pick_display
-                ]
-            ).then(
-                fn=update_spin_counter,
-                inputs=None,
-                outputs=[spin_counter]
-            )
-        except Exception as e:
-            print(f"Error in spins_textbox.change handler: {str(e)}")
-            gr.Warning(f"Error during spin analysis: {str(e)}")
+with gr.Blocks(title="WheelPulse", css=css) as demo:
+    state = gr.State(RouletteState())
+    analysis_cache = gr.State({})
+    show_trends_state = gr.State(True)
+    with gr.Row():
+        with gr.Column(scale=1):
+            spins_textbox = gr.Textbox(label="Enter Spins (e.g., 5, 12, 0)", placeholder="Type numbers separated by commas", elem_classes=["spins-textbox"])
+            spins_display = gr.Textbox(label="Selected Spins", interactive=False, elem_id="selected-spins")
+            spin_counter = gr.HTML("<span class='spin-counter'>Total Spins: 0</span>")
+            last_spin_count = gr.Slider(minimum=1, maximum=36, value=36, step=1, label="Last Spins to Show", elem_classes=["last-spin-count"])
+            show_trends = gr.Checkbox(label="Show Trends", value=True, elem_classes=["show-trends"])
+            last_spin_display = gr.HTML("<h4>Last Spins</h4><p>No spins yet.</p>", elem_classes=["last-spin-display"])
+            clear_spins_button = gr.Button("Clear Spins", elem_classes=["clear-spins-btn", "red-btn"])
+            clear_all_button = gr.Button("Clear All", elem_classes=["clear-all-btn", "red-btn"])
+            undo_button = gr.Button("Undo Last Spin", elem_classes=["undo-btn", "orange-btn"])
+            undo_count = gr.Slider(minimum=1, maximum=10, value=1, step=1, label="Number of Spins to Undo", elem_classes=["undo-count"])
+            generate_spins_button = gr.Button("Generate Random Spins", elem_classes=["generate-spins-btn", "green-btn"])
+            num_spins = gr.Slider(minimum=1, maximum=100, value=10, step=1, label="Number of Random Spins", elem_classes=["num-spins"])
+            spin_analysis_output = gr.Textbox(label="Spin Analysis", interactive=False, elem_classes=["spin-analysis-output"])
+    
+            # Line 1: Start of spins_textbox.change handler
+            try:
+                spins_textbox.change(
+                    fn=validate_spins_input,
+                    inputs=[spins_textbox],
+                    outputs=[spins_display, last_spin_display]
+                ).then(
+                    fn=orchestrate_analysis,
+                    inputs=[
+                        spins_display,
+                        strategy_dropdown,
+                        neighbours_count_slider,
+                        strong_numbers_count_slider,
+                        dozen_tracker_spins_dropdown,
+                        dozen_tracker_consecutive_hits_dropdown,
+                        dozen_tracker_alert_checkbox,
+                        dozen_tracker_sequence_length_dropdown,
+                        dozen_tracker_follow_up_spins_dropdown,
+                        dozen_tracker_sequence_alert_checkbox,
+                        even_money_tracker_spins_dropdown,
+                        even_money_tracker_consecutive_hits_dropdown,
+                        even_money_tracker_alert_checkbox,
+                        even_money_tracker_combination_mode_dropdown,
+                        even_money_tracker_red_checkbox,
+                        even_money_tracker_black_checkbox,
+                        even_money_tracker_even_checkbox,
+                        even_money_tracker_odd_checkbox,
+                        even_money_tracker_low_checkbox,
+                        even_money_tracker_high_checkbox,
+                        even_money_tracker_identical_traits_checkbox,
+                        even_money_tracker_consecutive_identical_dropdown,
+                        top_color_picker,
+                        middle_color_picker,
+                        lower_color_picker
+                    ],
+                    outputs=[
+                        spin_analysis_output,
+                        even_money_output,
+                        dozens_output,
+                        columns_output,
+                        streets_output,
+                        corners_output,
+                        six_lines_output,
+                        splits_output,
+                        sides_output,
+                        straight_up_html,
+                        top_18_html,
+                        strongest_numbers_output,
+                        dynamic_table_output,
+                        strategy_output,
+                        sides_of_zero_display,
+                        gr.State(),
+                        dozen_tracker_output,
+                        dozen_tracker_sequence_output,
+                        gr.State(),
+                        even_money_tracker_output,
+                        color_code_output,
+                        analysis_cache,
+                        traits_display,
+                        top_pick_display
+                    ]
+                ).then(
+                    fn=update_spin_counter,
+                    inputs=None,
+                    outputs=[spin_counter]
+                )
+            except Exception as e:
+                print(f"Error in spins_textbox.change handler: {str(e)}")
+                gr.Warning(f"Error during spin analysis: {str(e)}")
     
     try:
         spins_display.change(
